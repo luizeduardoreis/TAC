@@ -1,5 +1,6 @@
 (* Chapter 1 Basics *)
 Require Import Nat.
+From LF Require Export Induction.
 Inductive day : Type :=
 | monday : day
 | tuesday : day
@@ -250,11 +251,18 @@ Proof. reflexivity. Qed.
 
 (* Proof by Simplification *)
 
-Theorem plus_0_n : forall n:nat, 0 + n = n.
+Theorem plus_0_l : forall n:nat, 0 + n = n.
 Proof.
   intros n. reflexivity. Qed.
 
-(* Theorem, Example, Lemma, Fact, Remark: all meant the same thing to Coq. *)
+Theorem plus_0_r : forall n:nat, n + 0 = n.
+Proof.
+  intros n.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. reflexivity.
+Qed.
+  
 
 Theorem plus_1_l : forall n:nat, 1 + n = S n.
 Proof.
@@ -264,6 +272,14 @@ Theorem mult_0_l : forall n:nat, 0 * n = 0.
 Proof.
   intros n. reflexivity. Qed.
 
+Theorem mult_0_r : forall n:nat, n * 0 = 0.
+Proof.
+  intros n.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. reflexivity.
+Qed.
+  
 
 (* Proof by Rewriting *)
 
@@ -293,7 +309,7 @@ Theorem mult_0_plus : forall n m : nat,
                         (0 + n) * m = n * m.
 Proof.
   intros n m.
-  rewrite plus_0_n.
+  rewrite plus_0_l.
   reflexivity.
 Qed.
 
@@ -391,43 +407,6 @@ Proof.
 Qed.
 
 
-(* Exercise: *** binary *)
-Inductive bin : Type :=
-| zero       : bin
-| twice      : bin -> bin
-| twicePlus1 : bin -> bin.
-
-Fixpoint increment (b:bin) : bin :=
-  match b with
-    | zero          => twicePlus1 b
-    | twice b'      => twicePlus1 b'
-    | twicePlus1 b' => twice (increment b')
-  end.
-
-Fixpoint bin_to_nat (b:bin) : nat :=
-  match b with
-    | zero          => O
-    | twice b'      => mult 2 (bin_to_nat b')
-    | twicePlus1 b' => plus 1 (mult 2 (bin_to_nat b'))
-  end.
-
-Example inc_bin_to_nat_1 : bin_to_nat (increment zero) = 1.
-Proof. reflexivity. Qed.
-
-Example inc_bin_to_nat_2 : bin_to_nat (increment (twice zero)) = 1.
-Proof. reflexivity. Qed.
-
-Example inc_bin_to_nat_3 : bin_to_nat (increment (twicePlus1 zero)) = 2.
-Proof. reflexivity. Qed.
-
-Example inc_bin_to_nat_4 : bin_to_nat (increment (twice (twicePlus1 zero))) = 3.
-Proof. reflexivity. Qed.
-
-Example inc_bin_to_nat_5 :
-  bin_to_nat (increment (twice (twice (twicePlus1 zero)))) = 5.
-Proof. reflexivity. Qed.
-
-
 (* Exercise: ** optional decreasing *)
 
 (* Write a simple fixpoint function on numbers that does terminate on all inputs
@@ -441,11 +420,61 @@ Fixpoint not_zero (n:nat) : nat :=
   end.
 *)
 
-Theorem mul_comm:
-  forall a b: nat,
-  a*b = b * a.
+Theorem plus_n_Sm : forall n m : nat,
+  S (n + m) = n + (S m).
 Proof.
-Admitted.
+  intros n m.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. reflexivity.
+Qed.
+  
+
+Theorem add_comm : forall n m : nat,
+  n + m = m + n.
+Proof.
+  intros n m.
+  induction n as [| n' IHn'].
+  - rewrite plus_0_r. reflexivity.
+  - simpl. rewrite IHn'. rewrite plus_n_Sm. reflexivity.
+Qed.
+  
+Theorem add_assoc : forall n m p : nat,
+  n + (m + p) = (n + m) + p.
+Proof.
+  intros n m p.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. reflexivity.
+Qed.
+
+Theorem add_shuffle3 : forall n m p : nat,
+  n + (m + p) = m + (n + p).
+Proof.
+  intros n m p.
+  rewrite add_assoc. replace (n + m) with (m + n).
+    - rewrite add_assoc. reflexivity.
+    - rewrite add_comm. reflexivity.
+Qed.
+
+Theorem m_mul_sn : forall n m: nat,
+  m * S n = m + m * n.
+Proof.
+  intros n m.
+  induction m as [| m' IHm'].
+  - reflexivity.
+  - simpl. rewrite IHm'. rewrite add_shuffle3. reflexivity.
+Qed.
+
+Theorem mul_comm:
+  forall n m: nat,
+  n * m = m * n.
+Proof.
+  intros n m.
+  induction n as [| n' IHn'].
+  - rewrite mult_0_r. reflexivity. 
+  - simpl. rewrite m_mul_sn. rewrite IHn'. reflexivity.
+Qed.
 
 Theorem leb_refl : forall n:nat,
   (n <=? n) = true.
@@ -486,7 +515,172 @@ Proof.
   reflexivity.
 Qed.
 
-From LF Require Export Induction.
+Theorem mult_1_l : forall n:nat, 1 * n = n.
+Proof.
+  intros n.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite plus_0_r. reflexivity.
+Qed.
+  
+Theorem all3_spec : forall b c : bool,
+  orb
+    (andb b c)
+    (orb (negb b)
+         (negb c))
+  = true.
+Proof.
+  intros b c.
+  destruct b.
+  - destruct c.
+    -- reflexivity.
+    -- reflexivity.
+  - destruct c.
+    -- reflexivity.
+    -- reflexivity.
+Qed.
+
+Theorem mult_plus_distr_r : forall n m p : nat,
+  (n + m) * p = (n * p) + (m * p).
+Proof.
+  intros n m p.
+  induction p as [| p' IHp'].
+  - rewrite !mult_0_r. reflexivity.
+  - rewrite !m_mul_sn.
+    rewrite add_assoc. rewrite (add_comm (n + n * p') (m)). rewrite add_assoc. rewrite (add_comm m n). rewrite IHp'.
+    rewrite add_assoc.
+    reflexivity.
+Qed.
+
+Theorem mult_assoc : forall n m p : nat,
+  n * (m * p) = (n * m) * p.
+Proof.
+  intros n m p.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. rewrite mult_plus_distr_r. reflexivity.
+Qed.
+  
+Inductive bin : Type :=
+  | Z
+  | B0 (n : bin)
+  | B1 (n : bin).
+  
+Fixpoint incr (m:bin) : bin :=
+  match m with
+    | Z => B1 Z
+    | B0 m' => B1 m'
+    | B1 m' => B0 (incr m')
+  end.
+
+Fixpoint bin_to_nat (m:bin) : nat :=
+  match m with
+    | Z => O
+    | B0 m' => double (bin_to_nat m')
+    | B1 m' => S (double (bin_to_nat m'))
+  end.
+
+Example test_bin_incr1 : (incr (B1 Z)) = B0 (B1 Z).
+Proof. reflexivity. Qed.
+Example test_bin_incr2 : (incr (B0 (B1 Z))) = B1 (B1 Z).
+Proof. reflexivity. Qed.
+Example test_bin_incr3 : (incr (B1 (B1 Z))) = B0 (B0 (B1 Z)).
+Proof. reflexivity. Qed.
+Example test_bin_incr4 : bin_to_nat (B0 (B1 Z)) = 2.
+Proof. reflexivity. Qed.
+Example test_bin_incr5 :
+        bin_to_nat (incr (B1 Z)) = 1 + bin_to_nat (B1 Z).
+Proof. reflexivity. Qed.
+Example test_bin_incr6 :
+        bin_to_nat (incr (incr (B1 Z))) = 2 + bin_to_nat (B1 Z).
+Proof. reflexivity. Qed.
+Example test_bin_incr7 : bin_to_nat (B0 (B0 (B0 (B1 Z)))) = 8.
+Proof. reflexivity. Qed.
+
+Theorem bin_to_nat_pres_incr : forall b : bin,
+  bin_to_nat (incr b) = 1 + bin_to_nat b.
+Proof.
+  intros b.
+  simpl.
+  induction b as [| b' IHb' | b'' IHb''].
+  - reflexivity.
+  - reflexivity.
+  - simpl. rewrite IHb''. reflexivity. 
+Qed.
+
+Fixpoint nat_to_bin (n:nat) : bin :=
+  match n with
+   | O => Z
+   | S n' => incr (nat_to_bin n')
+  end.
+  
+Theorem nat_bin_nat : forall n, bin_to_nat (nat_to_bin n) = n.
+Proof.
+  intros n.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite bin_to_nat_pres_incr. rewrite IHn'. reflexivity.
+Qed.
+
+Lemma double_incr : forall n : nat, double (S n) = S (S (double n)).
+Proof. reflexivity. Qed.
+
+Definition double_bin (b:bin) : bin :=
+  match b with
+    | Z => Z
+    | b' => B0 b
+  end.
+  
+Example double_bin_zero : double_bin Z = Z.
+Proof. reflexivity. Qed.
+
+Lemma double_incr_bin : forall b,
+    double_bin (incr b) = incr (incr (double_bin b)).
+Proof.
+  intros b.
+  destruct b as [| b' | b''].
+  - reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
+
+Theorem bin_nat_bin_fails : forall b, nat_to_bin (bin_to_nat b) = b.
+Proof.
+Abort.
+
+Definition is_Z (b: bin) : bool :=
+  match b with
+    | Z => true
+    | _ => false
+  end.
+
+Fixpoint normalize (b:bin) : bin :=
+  match b with
+    | Z => Z
+    | B0 b' => double_bin (normalize b')
+    | B1 b' => incr (double_bin (normalize b'))
+  end.
+  
+Compute normalize (B1 (B0 (B0 (B0 (B1 (B1 (B0 (B0 (B0 (B0 Z)))))))))).
+
+Lemma double_nat_to_bin: forall n: nat,
+  nat_to_bin (double n) = double_bin (nat_to_bin n).
+Proof.
+  intros n.
+  induction n as [| n' IHn'].
+  - reflexivity.
+  - simpl. rewrite IHn'. rewrite double_incr_bin. reflexivity.
+Qed.  
+
+Theorem bin_nat_bin : forall b, nat_to_bin (bin_to_nat b) = normalize b.
+Proof.
+  intros b.
+  induction b as [| b' IHb' | b'' IHb''].
+  - reflexivity.
+  - simpl. rewrite double_nat_to_bin. rewrite IHb'. reflexivity.
+  - simpl. rewrite double_nat_to_bin. rewrite IHb''. reflexivity.
+Qed.
+
 Module NatList.
 
 Inductive natprod : Type :=
@@ -759,15 +953,14 @@ Theorem add_inc_count :
   count n (add n l) = S (count n l).
 Proof.
   intros n l.
-  simpl. rewrite <- eqb_refl. reflexivity.
+  simpl. rewrite eqb_refl. reflexivity.
 Qed.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_add_inc_count : option (nat*string) := None.
 
-Theorem nil_app : ∀ l : natlist,
+Theorem nil_app : forall l : natlist,
   [] ++ l = l.
 Proof. reflexivity. Qed.
-
 
 

@@ -1,6 +1,7 @@
 (* Chapter 1 Basics *)
 Require Import Nat.
 From LF Require Export Induction.
+From LF Require Export Lists.
 Inductive day : Type :=
 | monday : day
 | tuesday : day
@@ -1271,3 +1272,219 @@ Proof.
 Qed.
 
 End PartialMap.
+
+Inductive list (X:Type) : Type :=
+  | nil
+  | cons (x : X) (l : list X).
+  
+Arguments nil {X}.
+Arguments cons {X} _ _.
+
+Fixpoint length {X:Type} (l:list X) : nat :=
+  match l with
+    | nil => 0
+    | cons h t => S (length t)
+  end.
+
+Example test_length1: length (cons 1 (cons 2 (nil))) = 2.
+Proof. reflexivity. Qed.
+
+Example test_length2: length (cons true (nil)) = 1.
+Proof. reflexivity. Qed.
+
+Fixpoint app {X:Type} (l1 l2 : list X) : list X :=
+  match l1 with
+    | nil      => l2
+    | cons h t => cons h (app t l2)
+  end.
+  
+
+
+Notation "x :: y" := (cons x y)
+                     (at level 60, right associativity).
+Notation "[ ]" := nil.
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y []) ..).
+Notation "x ++ y" := (app x y)
+                     (at level 60, right associativity).
+  
+Fixpoint rev {X:Type} (l:list X) : list X :=
+  match l with
+  | nil => nil
+  | h::t => (rev t) ++ ([h])
+  end.
+Example test_rev1: rev (cons 1 (cons 2 (nil))) =
+                   (cons 2 (cons 1 (nil))).
+Proof. reflexivity. Qed.
+
+Example test_rev2: @rev bool nil = nil.
+Proof. reflexivity. Qed.
+Theorem app_nil_r : forall (X : Type), forall l : list X,
+  l ++ [] = l.
+Proof.
+  intros X l.
+  induction l as [|h t IHt].
+    - reflexivity.
+    - simpl. rewrite IHt. reflexivity.
+Qed.
+
+Theorem app_assoc : forall A (l m n : list A),
+  l ++ m ++ n = (l ++ m) ++ n.
+Proof.
+  intros X l m n.
+  induction l as [| h t IHt].
+  - reflexivity.
+  - simpl. rewrite IHt. reflexivity.
+Qed.
+
+Lemma app_length : forall (X : Type) (l1 l2 : list X),
+  length (l1 ++ l2) = length l1 + length l2.
+Proof.
+  intros X l1 l2.
+  induction l1 as [| h1 t1 IHt1].
+  - reflexivity.
+  - simpl. rewrite IHt1. reflexivity.
+Qed.
+
+Theorem rev_app_distr: forall X (l1 l2 : list X),
+  rev (l1 ++ l2) = rev l2 ++ rev l1.
+Proof.
+  intros X l1 l2.
+  induction l1 as [| h1 t1 IHt1].
+    - simpl. rewrite app_nil_r. reflexivity.
+    - simpl. rewrite IHt1. rewrite app_assoc. reflexivity. 
+Qed.
+
+Theorem rev_involutive : forall X : Type, forall l : list X,
+  rev (rev l) = l.
+Proof.
+  intros X l.
+  induction l as [| h t].
+  - reflexivity.
+  - simpl. rewrite rev_app_distr. rewrite IHt. reflexivity.
+Qed.
+
+Inductive prod (X Y : Type) : Type :=
+| pair (x : X) (y : Y).
+Arguments pair {X} {Y}.
+  
+Notation "( x , y )" := (pair x y).
+Notation "X * Y" := (prod X Y) : type_scope.
+
+Definition fst {X Y : Type} (p : X * Y) : X :=
+  match p with
+  | (x, y) => x
+  end.
+Definition snd {X Y : Type} (p : X * Y) : Y :=
+  match p with
+  | (x, y) => y
+  end.
+  
+Fixpoint combine {X Y: Type} (l1: list X) (l2 : list Y): list (X*Y) :=
+  match l1, l2 with
+    | [], _ => []
+    | _, [] => []
+    | h1::t1, h2::t2 => (h1, h2)::(combine t1 t2)
+  end.
+ 
+Compute (combine [1;2] [false;false;true;true]).
+
+Fixpoint split {X Y : Type} (l : list (X*Y)) : ((list X) * (list Y)) :=
+  match l with
+    | [] => ([], [])
+    | (x, y)::t => match split t with
+                    | (t1, t2) => (x::t1, y::t2)
+                  end
+  end.
+Example test_split:
+  split [(1,false);(2,false)] = ([1;2],[false;false]).
+Proof.
+  simpl.
+  reflexivity.
+Qed.
+
+Module OptionPlayground.
+Inductive option (X:Type) : Type :=
+  | Some (x : X)
+  | None.
+Arguments Some {X}.
+Arguments None {X}.
+
+Fixpoint nth_error {X: Type} (l: list X) (n:nat) : option X := 
+  match l with
+    | [] => None
+    | h::t => match n with
+              | O => Some h
+              | S n' => nth_error t n'
+             end
+  end.
+  
+Example test_nth_error1 : nth_error [4;5;6;7] 0 = Some 4.
+Proof. simpl. reflexivity. Qed.
+Example test_nth_error2 : nth_error [[1];[2]] 1 = Some [2].
+Proof. simpl. reflexivity. Qed.
+Example test_nth_error3 : nth_error [true] 2 = None.
+Proof. simpl. reflexivity. Qed.
+
+Definition hd_error {X : Type} (l : list X) : option X :=
+  match l with
+    | [] => None
+    | h::t => Some h
+  end.
+
+Check @hd_error : forall X : Type, list X -> option X.
+Example test_hd_error1 : hd_error [1;2] = Some 1.
+Proof. reflexivity. Qed.
+Example test_hd_error2 : hd_error [[1];[2]] = Some [1].
+Proof. reflexivity. Qed.
+
+End OptionPlayground.
+
+Definition doit3times {X : Type} (f : X -> X) (n : X) : X :=
+  f (f (f n)).
+  
+Check @doit3times : forall X : Type, (X -> X) -> X -> X.
+Example test_doit3times: doit3times minustwo 9 = 3.
+Proof. reflexivity. Qed.
+
+Example test_doit3times': doit3times negb true = false.
+Proof. reflexivity. Qed.
+
+Fixpoint filter {X: Type} (l: list X) (f: X -> bool) : list X :=
+  match l with
+    | [] => []
+    | h::t => if f h then h::(filter t f)
+              else filter t f
+  end.
+  
+Example test_filter1: filter [1;2;3;4] evenb = [2;4].
+Proof. reflexivity. Qed.
+
+Example test_anon_fun':
+  doit3times (fun n => n * n) 2 = 256.
+Proof. reflexivity. Qed.
+
+Definition partition {X : Type}
+                     (test : X -> bool)
+                     (l : list X)
+                   : list X * list X := (filter l test, filter l (fun x => if test x then false
+                                                                          else true)).
+
+Example test_partition1: partition oddb [1;2;3;4;5] = ([1;3;5], [2;4]).
+Proof. reflexivity. Qed.
+Example test_partition2: partition (fun x => false) [5;9;0] = ([], [5;9;0]).
+Proof. reflexivity. Qed.
+
+Fixpoint map {X Y: Type} (f: X -> Y) (l : list X) : list Y :=
+  match l with
+    | [] => []
+    | h::t => (f h)::(map f t)
+  end.
+  
+Example test_map1: map (fun x => plus 3 x) [2;0;2] = [5;3;5].
+Proof. simpl. reflexivity. Qed.
+
+Example test_map2:
+  map odd [2;1;2;5] = [false;true;false;true].
+Proof. reflexivity. Qed.
+
+  

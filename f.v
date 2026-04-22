@@ -1459,6 +1459,12 @@ Fixpoint filter {X: Type} (l: list X) (f: X -> bool) : list X :=
 Example test_filter1: filter [1;2;3;4] evenb = [2;4].
 Proof. reflexivity. Qed.
 
+Example test_filter2':
+    filter [ [1; 2]; [3]; [4]; [5;6;7]; []; [8] ] (fun l => (length l) =? 1)
+  = [ [3]; [4]; [8] ].
+Proof. reflexivity. Qed.
+
+
 Example test_anon_fun':
   doit3times (fun n => n * n) 2 = 256.
 Proof. reflexivity. Qed.
@@ -1525,5 +1531,86 @@ Definition option_map {X Y : Type} (f : X -> Y) (xo : option X)
   | Some x => Some (f x)
   end.
   
+  
+Fixpoint fold {X Y: Type} (f : X -> Y -> Y) (l : list X) (b : Y)
+                         : Y :=
+  match l with
+  | nil => b
+  | h :: t => f h (fold f t b)
+  end.
+  
+Example fold_example1 :
+  fold andb [true;true;false;true] true = false.
+Proof. reflexivity. Qed.
+
+Example fold_example2 :
+  fold mult [1;2;3;4] 1 = 24.
+Proof. reflexivity. Qed.
+
+Example fold_example3 :
+  fold app  [[1];[];[2;3];[4]] [] = [1;2;3;4].
+Proof. reflexivity. Qed.
+
+Example foldexample4 :
+  fold (fun l n => length l + n) [[1];[];[2;3;2];[4]] 0 = 5.
+Proof. reflexivity. Qed.
+
+
+Definition constfun {X:Type} (x:X) : nat -> X :=
+  fun (k:nat) => x.
+ 
+Definition ftrue := constfun true.
+
+Example constfun_example1 : ftrue 0 = true.
+Proof. reflexivity. Qed.
+
+Example constfun_example2 : (constfun 5) 99 = 5.
+Proof. reflexivity. Qed.
+
+Check plus.
+
+Definition plus3 := plus 3.
+
+Example test_plus3: plus3 10 = 13.
+Proof. reflexivity. Qed.
+
+Example test_plus3' : doit3times plus3 0 = 9.
+Proof. reflexivity. Qed.
+Example test_plus3'' : doit3times (plus 3) 0 = 9.
+Proof. reflexivity. Qed.
+
+Module Exercises.
+
+Definition fold_length {X:Type} (l:list X) : nat :=
+  fold (fun _ n => S n) l 0.
+  
+Theorem fold_length_correct:
+  forall X (l:list X),
+  fold_length l = length l.
+Proof.
+  intros X l.
+  induction l as [|h t IHt].
+  - reflexivity.
+  - simpl. rewrite <- IHt. unfold fold_length. reflexivity.
+Qed.
+
+Definition fold_map {X Y: Type} (f: X -> Y) (l: list X) : list Y :=
+  fold (fun x l => (f x)::l) l [].
+  
+Theorem fold_map_correct:
+  forall X Y (l:list X) (f:X->Y),
+  fold_map f l = map f l.
+Proof.
+  intros X Y l f.
+  induction l as [| h t IHt].
+  - reflexivity.
+  - simpl. rewrite <- IHt. unfold fold_map. simpl. reflexivity.
+Qed.
+
+
+
+
+
+
 
   

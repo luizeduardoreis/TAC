@@ -594,3 +594,30 @@ Proof.
             }
          }
 Qed.
+
+Definition split_combine_statement' : Prop :=
+  forall (X: Type) (l1 l2: list X),
+  length l1 = length l2 ->
+  split (combine l1 l2) = (l1, l2).
+
+
+Theorem split_combine' : split_combine_statement'.
+Proof.
+  intros X l1.
+  induction l1 as [| h1 t1 IH1].
+  - intros.
+    simpl.
+    destruct l2 as [| h2 t2 IH2].
+    + reflexivity.
+    + discriminate H.
+  - intros.
+    simpl in H.
+    destruct l2 as [| h2 t2].
+    + discriminate H.
+    + simpl in H.
+      injection H as H1.
+      apply IH1 in H1.
+      simpl.
+      rewrite H1.
+      reflexivity.
+Qed.

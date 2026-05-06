@@ -575,3 +575,111 @@ Proof.
         * rewrite <- IHt in H2. apply H2 in Hin. apply Hin.
 Qed.
 
+Definition combine_odd_even (Podd Peven : nat -> Prop) : nat -> Prop :=
+  fun (x: nat) => if oddb x then Podd x else Peven x.
+
+Theorem combine_odd_even_intro :
+  forall (Podd Peven : nat -> Prop) (n : nat),
+    (oddb n = true -> Podd n) ->
+    (oddb n = false -> Peven n) ->
+    combine_odd_even Podd Peven n.
+Proof.
+  intros Podd Peven n H1 H2.
+  unfold combine_odd_even. destruct (oddb n).
+  - apply H1. reflexivity.
+  - apply H2. reflexivity.
+Qed.
+
+Theorem combine_odd_even_elim_odd :
+  forall (Podd Peven : nat -> Prop) (n : nat),
+    combine_odd_even Podd Peven n ->
+    oddb n = true ->
+    Podd n.
+Proof.
+  intros Podd Peven n H1 H2.
+  unfold combine_odd_even in H1. rewrite H2 in H1.
+  apply H1.
+Qed.
+
+Theorem combine_odd_even_elim_even :
+  forall (Podd Peven : nat -> Prop) (n : nat),
+    combine_odd_even Podd Peven n ->
+    oddb n = false ->
+    Peven n.
+Proof.
+  intros Podd Peven n H1 H2.
+  unfold combine_odd_even in H1.
+  rewrite H2 in H1.
+  apply H1.
+Qed.
+
+
+Check plus_comm : forall n m : nat, n + m = m + n.
+Check plus_id_example : forall n m : nat, n = m -> n + n = m + m.
+
+Fixpoint soma_list (l : list nat) : nat :=
+  match l with
+    | [] => 0
+    | h::t => h + (soma_list t)
+  end.
+
+Theorem app_soma_list : forall (l1 l2 : list nat),
+  soma_list l1 + soma_list l2 = soma_list (l1 ++ l2).
+Proof.
+  intros l1 l2.
+  induction l1 as [| h1 t1].
+  - simpl. reflexivity.
+  - simpl. rewrite <- IHt1. rewrite plus_assoc. reflexivity.
+Qed.
+
+Lemma add_comm3 :
+  forall x y z, x + (y + z) = (z + y) + x.
+Proof.
+  intros n y z.
+  rewrite plus_comm.
+  assert (H: y + z = z + y). {
+    rewrite plus_comm. reflexivity.
+  }
+  rewrite H. reflexivity.
+Qed.
+
+Lemma add_comm3_take3 :
+  forall x y z, x + (y + z) = (z + y) + x.
+Proof.
+  intros x y z.
+  rewrite plus_comm.
+  rewrite (plus_comm y z).
+  reflexivity.
+Qed.
+
+Lemma add_comm3_take4 :
+  forall x y z, x + (y + z) = (z + y) + x.
+Proof.
+  intros x y z.
+  rewrite (plus_comm (z + y) (x)).
+  rewrite (plus_comm z y).
+  reflexivity.
+Qed.
+
+Theorem in_not_nil :
+  forall A (x : A) (l : list A), In x l -> l <> [].
+Proof.
+  intros A x l H Hnot.
+  rewrite Hnot in H.
+  destruct H.
+Qed.
+
+Lemma in_not_nil_42 :
+  forall l : list nat, In 42 l -> l <> [].
+Proof.
+  intros l. apply (in_not_nil nat 42).
+Qed.
+
+Lemma in_not_nil_42' :
+  forall l : list nat, In 42 l -> l <> [].
+Proof.
+  intros l H.
+  apply in_not_nil in H.
+  apply H.
+Qed.
+

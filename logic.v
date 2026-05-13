@@ -683,3 +683,59 @@ Proof.
   apply H.
 Qed.
 
+
+Axiom functional_extensionality : forall {X Y: Type}
+                                    {f g : X -> Y},
+  (forall (x:X), f x = g x) -> f = g.
+
+Example function_equality_ex2 :
+  (fun x => plus x 1) = (fun x => plus 1 x).
+Proof.
+  apply functional_extensionality.
+  intros x.
+  apply plus_comm.
+Qed.
+
+Print Assumptions functional_extensionality.
+
+ Fixpoint rev_append {X} (l1 l2 : list X) : list X :=
+  match l1 with
+  | [] => l2
+  | x :: l1' => rev_append l1' (x :: l2)
+  end.
+Definition tr_rev {X} (l : list X) : list X :=
+  rev_append l [].
+
+Lemma rev_append_rev : forall (X: Type) (l1 l2: list X),
+  rev_append l1 l2 = (rev l1) ++ l2.
+Proof.
+  intros X l1.
+  induction l1 as [| h1 t1 IHt1].
+    - reflexivity.
+    - intros l2. simpl. rewrite IHt1. rewrite <- app_assoc.
+      simpl. reflexivity.
+Qed.
+
+Theorem tr_rev_correct : forall X, @tr_rev X = @rev X.
+Proof.
+  intros X.
+  apply functional_extensionality.
+  intros l.
+  unfold tr_rev.
+  destruct l as [|h t].
+  - reflexivity.
+  - simpl. apply rev_append_rev.
+Qed.
+
+Theorem restricted_excluded_middle : forall P b,
+  (P <-> b = true) -> P \/ ~ P.
+Proof.
+  intros P b H.
+  destruct b.
+  - left. apply H. reflexivity.
+  - right. rewrite H. intros contra. discriminate contra.
+Qed.
+
+Theorem restricted_excluded_middle_eq : forall (n m : nat),
+  n = m \/ n ≠ m.
+Proof.

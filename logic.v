@@ -736,6 +736,18 @@ Proof.
   - right. rewrite H. intros contra. discriminate contra.
 Qed.
 
+Theorem eqb_eq : forall n1 n2 : nat,
+  n1 =? n2 = true <-> n1 = n2.
+Proof. Admitted.
+
 Theorem restricted_excluded_middle_eq : forall (n m : nat),
-  n = m \/ n ≠ m.
+  n = m \/ n <> m.
 Proof.
+  intros n m.
+  apply (restricted_excluded_middle (n = m) (n =? m)).
+  symmetry.
+  apply eqb_eq.
+Qed.
+
+
+  
